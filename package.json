@@ -1,9 +1,9 @@
 {
-  "name": "expo-template-tabs",
+  "name": "capital-crusade",
   "main": "expo-router/entry",
-  "description": "The Tab Navigation project template includes several example screens.",
+  "description": "A finance education mobile game built with Expo.",
   "license": "0BSD",
-  "version": "54.0.56",
+  "version": "0.1.0",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
