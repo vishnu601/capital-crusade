@@ -26,12 +26,18 @@ export function Button({ label, onPress, variant = "primary", loading = false, d
   const handlePressIn = () => {
     if (!disabled && !loading) {
       scale.value = withTiming(0.96, { duration: 80 });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
   const handlePressOut = () => {
     scale.value = withTiming(1, { duration: 80 });
+  };
+
+  const handlePress = () => {
+    if (!disabled && !loading) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onPress?.();
+    }
   };
 
   const isDisabled = disabled || loading;
@@ -51,7 +57,7 @@ export function Button({ label, onPress, variant = "primary", loading = false, d
 
   return (
     <AnimatedPressable
-      onPress={isDisabled ? undefined : onPress}
+      onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={animatedStyle}

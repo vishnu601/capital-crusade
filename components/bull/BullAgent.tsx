@@ -1,23 +1,23 @@
 import { useEffect } from "react";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedProps,
+  withRepeat,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import Svg, {
   Defs,
   LinearGradient,
   Stop,
-  RadialGradient,
   Ellipse,
   Circle,
   Path,
   G,
 } from "react-native-svg";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  Easing,
-} from "react-native-reanimated";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type BullExpression =
   | "neutral"
@@ -32,102 +32,104 @@ export interface BullAgentProps {
   animated?: boolean;
 }
 
-// ─── Expression data ─────────────────────────────────────────────────────────
+// Animated SVG ellipse for the speaking mouth pulse
+const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
 
-interface ExpressionConfig {
-  /** Pupil offset from eye centre */
-  pupilDx: number;
-  pupilDy: number;
-  /** Vertical radius of the white sclera (full = 10, squint → smaller) */
-  scleraRy: number;
-  /** Y offset applied to both eyebrow paths (positive = brows closer to eyes) */
-  browDy: number;
-  /** Mouth SVG path string (centred around x=100, muzzle region) */
-  mouth: string;
-  /** Show mouth as open (filled ellipse) instead of a line */
-  mouthOpen: boolean;
-}
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-const EXPRESSIONS: Record<BullExpression, ExpressionConfig> = {
-  neutral: {
-    pupilDx: 0,
-    pupilDy: 0,
-    scleraRy: 9,
-    browDy: 0,
-    mouth: "M 86 139 Q 100 146 114 139",
-    mouthOpen: false,
-  },
-  thinking: {
-    pupilDx: 4,
-    pupilDy: -3,
-    scleraRy: 6.5,
-    browDy: -3,
-    mouth: "M 86 141 Q 100 139 114 141",
-    mouthOpen: false,
-  },
-  pleased: {
-    pupilDx: 0,
-    pupilDy: 0,
-    scleraRy: 2.5, // thin arc = ^_^ squint
-    browDy: -5,
-    mouth: "M 84 136 Q 100 150 116 136",
-    mouthOpen: false,
-  },
-  concerned: {
-    pupilDx: 0,
-    pupilDy: 2,
-    scleraRy: 9,
-    browDy: 5, // brows pushed DOWN toward eyes
-    mouth: "M 86 143 Q 100 136 114 143",
-    mouthOpen: false,
-  },
-  speaking: {
-    pupilDx: 0,
-    pupilDy: 0,
-    scleraRy: 8,
-    browDy: 0,
-    mouth: "M 86 136 Q 100 152 114 136", // placeholder; mouthOpen draws ellipse
-    mouthOpen: true,
-  },
-};
+/** Renders both eyes based on expression. Pure SVG, no hooks. */
+function Eyes({ expression }: { expression: BullExpression }) {
+  // pleased = arc eyes, no pupils
+  if (expression === "pleased") {
+    return (
+      <G>
+        {/* Left eye arc — ^_^ style */}
+        <Path
+          d="M 76 116 Q 90 105 104 116"
+          fill="none"
+          stroke="#2A3450"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
+        {/* Right eye arc */}
+        <Path
+          d="M 136 116 Q 150 105 164 116"
+          fill="none"
+          stroke="#2A3450"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
+      </G>
+    );
+  }
 
-// ─── Eye sub-component (pure SVG, no hooks) ───────────────────────────────────
-
-function Eye({
-  cx,
-  cy,
-  cfg,
-}: {
-  cx: number;
-  cy: number;
-  cfg: ExpressionConfig;
-}) {
-  const { pupilDx, pupilDy, scleraRy } = cfg;
-  const isSquint = scleraRy <= 3;
+  // Pupil offset per expression
+  const pupil: Record<BullExpression, [number, number]> = {
+    neutral:   [0, 0],
+    thinking:  [4, -5],
+    pleased:   [0, 0], // unused — handled above
+    concerned: [0,  1],
+    speaking:  [0,  0],
+  };
+  const [dx, dy] = pupil[expression];
 
   return (
     <G>
-      {/* White sclera */}
-      <Ellipse cx={cx} cy={cy} rx={11} ry={scleraRy} fill="white" />
-      {/* Pupil + shine — hidden when fully squinted */}
-      {!isSquint && (
-        <G>
-          <Circle
-            cx={cx + pupilDx}
-            cy={cy + pupilDy}
-            r={5.5}
-            fill="#111827"
-          />
-          {/* Shine dot */}
-          <Circle
-            cx={cx + pupilDx + 2}
-            cy={cy + pupilDy - 2}
-            r={1.5}
-            fill="white"
-          />
-        </G>
-      )}
+      {/* Left eye white */}
+      <Ellipse cx={90} cy={115} rx={14} ry={11} fill="#F5F7FA" stroke="#2A3450" strokeWidth={1} />
+      {/* Left pupil */}
+      <Circle cx={90 + dx} cy={115 + dy} r={6} fill="#0A0E1A" />
+      {/* Left shine */}
+      <Circle cx={93 + dx} cy={112 + dy} r={2} fill="white" />
+
+      {/* Right eye white */}
+      <Ellipse cx={150} cy={115} rx={14} ry={11} fill="#F5F7FA" stroke="#2A3450" strokeWidth={1} />
+      {/* Right pupil */}
+      <Circle cx={150 + dx} cy={115 + dy} r={6} fill="#0A0E1A" />
+      {/* Right shine */}
+      <Circle cx={153 + dx} cy={112 + dy} r={2} fill="white" />
     </G>
+  );
+}
+
+/** Renders eyebrows for expressions that need them. */
+function Eyebrows({ expression }: { expression: BullExpression }) {
+  if (expression === "thinking") {
+    return (
+      <G stroke="#4A2C00" strokeWidth={3} strokeLinecap="round" fill="none">
+        <Path d="M 76 100 Q 90 95 104 100" />
+        <Path d="M 136 95 Q 150 92 164 100" />
+      </G>
+    );
+  }
+  if (expression === "concerned") {
+    return (
+      <G stroke="#4A2C00" strokeWidth={3} strokeLinecap="round" fill="none">
+        {/* Angled inward and down — angry V shape */}
+        <Path d="M 76 105 Q 90 100 104 108" />
+        <Path d="M 136 108 Q 150 100 164 105" />
+      </G>
+    );
+  }
+  return null;
+}
+
+/** Renders the mouth for non-speaking expressions. */
+function StaticMouth({ expression }: { expression: Exclude<BullExpression, "speaking"> }) {
+  const paths: Record<typeof expression, string> = {
+    neutral:   "M 108 180 L 132 180",
+    thinking:  "M 108 180 L 132 180",
+    pleased:   "M 105 178 Q 120 190 135 178",
+    concerned: "M 105 185 Q 120 177 135 185",
+  };
+  return (
+    <Path
+      d={paths[expression]}
+      stroke="#4A2C00"
+      strokeWidth={2}
+      strokeLinecap="round"
+      fill="none"
+    />
   );
 }
 
@@ -138,148 +140,131 @@ export function BullAgent({
   expression = "neutral",
   animated = true,
 }: BullAgentProps) {
+  // ── Breathing ──────────────────────────────────────────────────────────────
   const breathScale = useSharedValue(1);
 
   useEffect(() => {
-    if (animated) {
-      breathScale.value = withRepeat(
-        withTiming(1.025, {
-          duration: 1600,
-          easing: Easing.inOut(Easing.sin),
-        }),
+    if (!animated) {
+      breathScale.value = withTiming(1, { duration: 200 });
+      return;
+    }
+    breathScale.value = withRepeat(
+      withTiming(1.025, { duration: 1500, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+  }, [animated]);
+
+  const breathStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: breathScale.value }],
+  }));
+
+  // ── Speaking mouth pulse ───────────────────────────────────────────────────
+  const mouthRx = useSharedValue(8);
+
+  useEffect(() => {
+    if (expression === "speaking") {
+      mouthRx.value = withRepeat(
+        withTiming(10, { duration: 200, easing: Easing.inOut(Easing.quad) }),
         -1,
         true,
       );
     } else {
-      breathScale.value = withTiming(1, { duration: 200 });
+      mouthRx.value = 8;
     }
-  }, [animated]);
+  }, [expression]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: breathScale.value }],
+  const mouthAnimatedProps = useAnimatedProps(() => ({
+    rx: mouthRx.value,
   }));
 
-  const cfg = EXPRESSIONS[expression];
-
-  // Eyebrow base Y coordinates (for neutral)
-  const browLeftY1 = 80;
-  const browLeftY2 = 76;
-  const browRightY1 = 76;
-  const browRightY2 = 80;
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <Animated.View style={[{ width: size, height: size }, animatedStyle]}>
-      <Svg width={size} height={size} viewBox="0 0 200 200">
+    <Animated.View style={[{ width: size, height: size }, breathStyle]}>
+      <Svg width={size} height={size} viewBox="0 0 240 240">
         <Defs>
-          {/* Face gradient — lighter at top, richer at bottom */}
-          <LinearGradient id="faceGrad" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0%" stopColor="#FFD166" />
-            <Stop offset="60%" stopColor="#FFB627" />
-            <Stop offset="100%" stopColor="#E09A10" />
+          <LinearGradient id="headGrad" x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0%"   stopColor="#FFB627" />
+            <Stop offset="100%" stopColor="#E89B0E" />
           </LinearGradient>
-
-          {/* Horn gradient */}
-          <LinearGradient id="hornGrad" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0%" stopColor="#FFE599" />
-            <Stop offset="100%" stopColor="#FFD166" />
-          </LinearGradient>
-
-          {/* Muzzle gradient — slightly darker / warmer */}
-          <LinearGradient id="muzzleGrad" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0%" stopColor="#F0A820" />
-            <Stop offset="100%" stopColor="#D4900A" />
-          </LinearGradient>
-
-          {/* Subtle cheek highlight */}
-          <RadialGradient
-            id="cheekHighlight"
-            cx="0.35"
-            cy="0.3"
-            r="0.55"
-            fx="0.35"
-            fy="0.3"
-          >
-            <Stop offset="0%" stopColor="#FFE599" stopOpacity="0.45" />
-            <Stop offset="100%" stopColor="#FFB627" stopOpacity="0" />
-          </RadialGradient>
         </Defs>
 
-        {/* ── Horns ──────────────────────────────────────────────────────── */}
-        {/* Left horn: sweeps up-left then tips slightly right */}
+        {/* ── LAYER 1 — HORNS (behind head) ───────────────────────────── */}
+        {/* Left horn: base ~14 px wide at (78,70), tapers to tip at (40,30) */}
         <Path
-          d="M 64 70 C 52 52, 46 32, 58 18 C 64 30, 70 50, 72 66"
-          fill="url(#hornGrad)"
+          d="M 72 74 Q 32 55 40 30 Q 48 25 50 34 Q 68 58 86 72 Z"
+          fill="#FFD166"
+          stroke="#FFB627"
+          strokeWidth={2}
+          strokeLinejoin="round"
         />
-        {/* Right horn */}
+        {/* Right horn: mirror */}
         <Path
-          d="M 136 70 C 148 52, 154 32, 142 18 C 136 30, 130 50, 128 66"
-          fill="url(#hornGrad)"
+          d="M 168 74 Q 208 55 200 30 Q 192 25 190 34 Q 172 58 154 72 Z"
+          fill="#FFD166"
+          stroke="#FFB627"
+          strokeWidth={2}
+          strokeLinejoin="round"
         />
 
-        {/* ── Ears ───────────────────────────────────────────────────────── */}
-        <Ellipse cx={56} cy={108} rx={15} ry={20} fill="#E09A10" />
-        <Ellipse cx={144} cy={108} rx={15} ry={20} fill="#E09A10" />
-        {/* Inner ear */}
-        <Ellipse cx={56} cy={110} rx={8} ry={12} fill="#C07800" />
-        <Ellipse cx={144} cy={110} rx={8} ry={12} fill="#C07800" />
+        {/* ── LAYER 3 — EAR TUFTS (behind head, in front of horns) ──────── */}
+        {/* Left ear */}
+        <Path
+          d="M 54 98 Q 44 82 52 72 Q 62 82 68 98 Z"
+          fill="#E89B0E"
+        />
+        {/* Right ear */}
+        <Path
+          d="M 186 98 Q 196 82 188 72 Q 178 82 172 98 Z"
+          fill="#E89B0E"
+        />
 
-        {/* ── Main face ──────────────────────────────────────────────────── */}
-        <Ellipse cx={100} cy={107} rx={58} ry={63} fill="url(#faceGrad)" />
+        {/* ── LAYER 2 — HEAD (main face shape) ────────────────────────── */}
+        {/*
+          Wider at forehead, narrows into the snout region.
+          Key points: forehead (60,80)→(180,80), cheeks out to ~x=200/x=40,
+          then narrows down to snout at ~y=200.
+        */}
+        <Path
+          d="M 60 80 Q 120 62 180 80 Q 208 115 165 175 Q 148 202 120 204 Q 92 202 75 175 Q 32 115 60 80 Z"
+          fill="url(#headGrad)"
+          stroke="#B8770A"
+          strokeWidth={1.5}
+        />
 
-        {/* Cheek highlight overlay */}
-        <Ellipse cx={100} cy={107} rx={58} ry={63} fill="url(#cheekHighlight)" />
+        {/* ── LAYER 4 — SNOUT ─────────────────────────────────────────── */}
+        <Ellipse cx={120} cy={178} rx={27} ry={23} fill="#D88A05" />
+        {/* Nostrils */}
+        <Ellipse cx={108} cy={175} rx={5} ry={4} fill="#4A2C00" />
+        <Ellipse cx={132} cy={175} rx={5} ry={4} fill="#4A2C00" />
 
-        {/* ── Muzzle ─────────────────────────────────────────────────────── */}
-        <Ellipse cx={100} cy={140} rx={29} ry={19} fill="url(#muzzleGrad)" />
-
-        {/* ── Nostrils ───────────────────────────────────────────────────── */}
-        <Ellipse cx={91} cy={144} rx={5} ry={4} fill="#9A6000" />
-        <Ellipse cx={109} cy={144} rx={5} ry={4} fill="#9A6000" />
-
-        {/* ── Nose ring ──────────────────────────────────────────────────── */}
+        {/* ── LAYER 5 — NOSE RING ──────────────────────────────────────── */}
         <Circle
-          cx={100}
-          cy={151}
-          r={6.5}
+          cx={120}
+          cy={195}
+          r={8}
           fill="none"
           stroke="#2DD4BF"
           strokeWidth={2.5}
         />
 
-        {/* ── Eyebrows ───────────────────────────────────────────────────── */}
-        {/* Left brow */}
-        <Path
-          d={`M 71 ${browLeftY1 + cfg.browDy} Q 82 ${browLeftY2 + cfg.browDy} 93 ${browLeftY1 - 1 + cfg.browDy}`}
-          stroke="#C07800"
-          strokeWidth={3}
-          strokeLinecap="round"
-          fill="none"
-        />
-        {/* Right brow */}
-        <Path
-          d={`M 107 ${browRightY1 - 1 + cfg.browDy} Q 118 ${browRightY2 + cfg.browDy} 129 ${browRightY1 + cfg.browDy}`}
-          stroke="#C07800"
-          strokeWidth={3}
-          strokeLinecap="round"
-          fill="none"
-        />
+        {/* ── LAYER 7 — EYEBROWS (below eyes so they render on top) ────── */}
+        <Eyebrows expression={expression} />
 
-        {/* ── Eyes ───────────────────────────────────────────────────────── */}
-        <Eye cx={83} cy={97} cfg={cfg} />
-        <Eye cx={117} cy={97} cfg={cfg} />
+        {/* ── LAYER 6 — EYES ───────────────────────────────────────────── */}
+        <Eyes expression={expression} />
 
-        {/* ── Mouth ──────────────────────────────────────────────────────── */}
-        {cfg.mouthOpen ? (
-          /* Speaking: open oval mouth */
-          <Ellipse cx={100} cy={141} rx={12} ry={7} fill="#7A4A00" />
-        ) : (
-          <Path
-            d={cfg.mouth}
-            stroke="#9A6000"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            fill="none"
+        {/* ── MOUTH ────────────────────────────────────────────────────── */}
+        {expression === "speaking" ? (
+          <AnimatedEllipse
+            animatedProps={mouthAnimatedProps}
+            cx={120}
+            cy={182}
+            ry={4}
+            fill="#4A2C00"
           />
+        ) : (
+          <StaticMouth expression={expression} />
         )}
       </Svg>
     </Animated.View>

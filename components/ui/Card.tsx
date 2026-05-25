@@ -21,7 +21,6 @@ export function Card({ children, onPress, className = "", padded = true }: CardP
   const handlePressIn = () => {
     if (onPress) {
       scale.value = withTiming(0.96, { duration: 80 });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
@@ -29,9 +28,16 @@ export function Card({ children, onPress, className = "", padded = true }: CardP
     scale.value = withTiming(1, { duration: 80 });
   };
 
+  const handlePress = () => {
+    if (onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onPress();
+    }
+  };
+
   return (
     <AnimatedPressable
-      onPress={onPress}
+      onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={animatedStyle}
