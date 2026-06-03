@@ -11,6 +11,7 @@ import { Pill }       from "@/components/ui/Pill";
 import { BullScene }  from "@/components/bull/BullScene";
 import { BullAgent }  from "@/components/bull/BullAgent";
 import type { BullExpression } from "@/components/bull/BullAgent";
+import { useGameStore } from "@/store/index";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,6 @@ export default function DemoScreen() {
   const [exprIdx, setExprIdx]       = useState(0);
   const [loadingBtn, setLoadingBtn] = useState(false);
 
-  // Cycle through expressions every 3 s
   useEffect(() => {
     const id = setInterval(
       () => setExprIdx((i) => (i + 1) % EXPRESSIONS.length),
@@ -147,16 +147,107 @@ export default function DemoScreen() {
         <AppText variant="micro"   color="muted">Micro · 11px uppercase</AppText>
       </View>
 
+      {/* ── Store debug panel ────────────────────────────────────────────── */}
+      <StoreDebugPanel />
+
     </Screen>
   );
 }
 
-// ─── Local helper ─────────────────────────────────────────────────────────────
+// ─── Store debug panel ────────────────────────────────────────────────────────
+
+function StoreDebugPanel() {
+  // Fine-grained selectors so only the values we care about cause re-renders
+  const phase          = useGameStore((s) => s.phase);
+  const selectedGoal   = useGameStore((s) => s.selectedGoal);
+  const cash           = useGameStore((s) => s.cash);
+  const holdingsCount  = useGameStore((s) => s.holdings.length);
+  const currentDay     = useGameStore((s) => s.currentDay);
+  const currentYear    = useGameStore((s) => s.currentYear);
+  const isRunning      = useGameStore((s) => s.isRunning);
+  const eventCount     = useGameStore((s) => s.events.length);
+
+  const selectGoal    = useGameStore((s) => s.selectGoal);
+  const buyAsset      = useGameStore((s) => s.buyAsset);
+  const tick          = useGameStore((s) => s.tick);
+  const resetGame     = useGameStore((s) => s.resetGame);
+
+  const fmt = (n: number) =>
+    "₹" + Math.round(n).toLocaleString("en-IN");
+
+  return (
+    <View style={{ marginBottom: 48 }}>
+      <SectionLabel>Store debug</SectionLabel>
+
+      {/* ── Live state values ── */}
+      <Card padded>
+        <AppText variant="caption" color="muted" style={{ marginBottom: 8 }}>
+          LIVE STATE
+        </AppText>
+        <View style={{ gap: 6 }}>
+          <Row label="Phase"          value={phase} />
+          <Row label="Goal"           value={selectedGoal ?? "none"} />
+          <Row label="Cash"           value={fmt(cash)} highlight />
+          <Row label="Holdings"       value={String(holdingsCount)} />
+          <Row label="Day / Year"     value={`${currentDay} / ${currentYear}`} />
+          <Row label="Running"        value={isRunning ? "yes" : "no"} />
+          <Row label="Log events"     value={String(eventCount)} />
+        </View>
+      </Card>
+
+      {/* ── Test actions ── */}
+      <AppText variant="caption" color="muted" style={{ marginTop: 16, marginBottom: 10 }}>
+        TEST ACTIONS
+      </AppText>
+      <View style={{ gap: 10 }}>
+        <Button
+          label="Select retirement goal"
+          variant="secondary"
+          onPress={() => selectGoal("retirement_long")}
+        />
+        <Button
+          label="Buy ₹10k Bharath Large-Cap"
+          variant="secondary"
+          onPress={() => buyAsset("bharath_largecap_eq", 10_000)}
+        />
+        <Button
+          label="Tick day +1"
+          variant="ghost"
+          onPress={() => tick()}
+        />
+        <Button
+          label="Reset game"
+          variant="ghost"
+          onPress={() => resetGame()}
+        />
+      </View>
+    </View>
+  );
+}
+
+// ─── Local helpers ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: string }) {
   return (
     <AppText variant="caption" color="muted" style={{ marginBottom: 12, letterSpacing: 1 }}>
       {children.toUpperCase()}
     </AppText>
+  );
+}
+
+function Row({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+      <AppText variant="caption" color="muted">{label}</AppText>
+      <AppText variant="caption" color={highlight ? "bull" : "secondary"}>{value}</AppText>
+    </View>
   );
 }
