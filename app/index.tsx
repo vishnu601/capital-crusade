@@ -60,17 +60,22 @@ export default function DemoScreen() {
 
       {/* ── Expression showcase ─────────────────────────────────────────── */}
       <SectionLabel>Expressions (cycling every 3 s)</SectionLabel>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 36 }}>
+      <View style={{ alignItems: "center", marginBottom: 12 }}>
+        <BullAgent size={120} expression={EXPRESSIONS[exprIdx]} animated />
+        <AppText variant="heading" color="bull" style={{ marginTop: 8 }}>
+          {EXPRESSIONS[exprIdx]}
+        </AppText>
+      </View>
+      {/* Expression name pills */}
+      <View style={{ flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 8, marginBottom: 36 }}>
         {EXPRESSIONS.map((expr, i) => (
-          <View key={expr} style={{ alignItems: "center", gap: 4 }}>
-            <BullAgent size={48} expression={expr} animated={false} />
-            <AppText
-              variant="micro"
-              color={exprIdx === i ? "bull" : "muted"}
-            >
-              {expr}
-            </AppText>
-          </View>
+          <AppText
+            key={expr}
+            variant="micro"
+            color={exprIdx === i ? "bull" : "disabled"}
+          >
+            {expr}
+          </AppText>
         ))}
       </View>
 
