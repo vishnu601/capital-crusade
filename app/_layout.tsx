@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { useCallback } from "react";
 import { View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useFonts,
   Inter_400Regular,
@@ -34,8 +35,10 @@ export default function RootLayout() {
   }
 
   return (
-    <View className="flex-1" onLayout={onLayoutRootView}>
-      <Stack screenOptions={{ headerShown: false }} />
-    </View>
+    <SafeAreaProvider>
+      <View className="flex-1" onLayout={onLayoutRootView}>
+        <Stack screenOptions={{ headerShown: false }} />
+      </View>
+    </SafeAreaProvider>
   );
 }

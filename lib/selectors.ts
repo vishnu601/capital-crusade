@@ -141,3 +141,8 @@ export function totalReturnPct(
   if (startingCapital === 0) return 0;
   return ((currentValue - startingCapital) / startingCapital) * 100;
 }
+
+/** Convert a 0-indexed game day to a 0-indexed year number (0 = Year 1). */
+export function dayToYear(day: number): number {
+  return Math.floor(day / 365);
+}

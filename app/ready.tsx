@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
 
 import { AppText }     from "@/components/ui/AppText";
 import { Button }      from "@/components/ui/Button";
@@ -29,9 +29,9 @@ const PANIC_LABEL = {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ReadyScreen() {
-  const selectedGoal  = useGameStore((s) => s.selectedGoal);
-  const committedPlan = useGameStore((s) => s.committedPlan);
-  const [showToast, setShowToast] = useState(false);
+  const selectedGoal     = useGameStore((s) => s.selectedGoal);
+  const committedPlan    = useGameStore((s) => s.committedPlan);
+  const startSimulation  = useGameStore((s) => s.startSimulation);
   const [speechDone, setSpeechDone] = useState(false);
 
   // Guard
@@ -44,11 +44,8 @@ export default function ReadyScreen() {
   const { targetAllocation: alloc, rebalanceRule, panicSellRule } = committedPlan;
 
   const handleBegin = () => {
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-      router.replace("/");
-    }, 2000);
+    startSimulation();
+    router.replace("/play");
   };
 
   const handleEdit = () => {
@@ -111,29 +108,6 @@ export default function ReadyScreen() {
           <Animated.View entering={FadeIn.duration(300)} style={{ gap: 12, paddingBottom: 24 }}>
             <Button label="Begin simulation" variant="primary" onPress={handleBegin} />
             <Button label="Edit my strategy" variant="ghost"   onPress={handleEdit} />
-          </Animated.View>
-        )}
-
-        {/* ── Toast ────────────────────────────────────────────────────── */}
-        {showToast && (
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            style={{
-              position: "absolute",
-              bottom: 90,
-              left: 24,
-              right: 24,
-              backgroundColor: "#141B2D",
-              borderWidth: 1,
-              borderColor: "#2A3450",
-              borderRadius: 12,
-              padding: 14,
-              alignItems: "center",
-            }}
-          >
-            <AppText variant="caption" color="secondary">
-              🚧 Simulation engine coming in next build
-            </AppText>
           </Animated.View>
         )}
 

@@ -48,17 +48,62 @@ export interface Asset {
   buriedFact: string;
 }
 
+// ─── News ────────────────────────────────────────────────────────────────────
+
+export type NewsCategory =
+  | "rate_hike"
+  | "rate_cut"
+  | "earnings_beat"
+  | "earnings_miss"
+  | "global_crisis"
+  | "inflation_spike"
+  | "budget_positive"
+  | "budget_negative"
+  | "currency_weakness"
+  | "tax_law_change"
+  | "small_cap_rally"
+  | "small_cap_crash";
+
+export interface NewsEvent {
+  id: string;
+  /** Day number (0-indexed) when this event fires */
+  day: number;
+  category: NewsCategory;
+  headline: string;
+  body: string;
+  /** Headline impact duration in days (max of per-class durations) */
+  impactDurationDays: number;
+}
+
 // ─── Market ──────────────────────────────────────────────────────────────────
 
 export interface MarketState {
-  currentDay: number;   // 0 to 3650 (10 years)
-  currentYear: number;  // convenience: floor(currentDay / 365)
-  isRunning: boolean;
-  speed: 1 | 2 | 4;
+  currentDay:           number;   // 0 to 3649
+  currentYear:          number;   // convenience: floor(currentDay / 365)
+  isRunning:            boolean;
+  isPaused:             boolean;
+  speed:                1 | 2 | 4;
+  quitEarly:            boolean;
   /** Current NAV per unit for every asset, keyed by assetId */
-  prices: Record<string, number>;
-  /** Full daily NAV history per asset — index = day number */
-  priceHistory: Record<string, number[]>;
+  prices:               Record<string, number>;
+  /** NAV history seen so far — grows each tick */
+  priceHistory:         Record<string, number[]>;
+  /** Full pre-generated price paths (includes news impacts baked in) */
+  pricePaths:           Record<string, number[]>;
+  /** All news events for this game run, sorted by day */
+  newsTimeline:         NewsEvent[];
+  /** IDs of news events already fired */
+  firedNewsIds:         string[];
+  /** Most recently fired news event — shown in the news card */
+  activeNews:           NewsEvent | null;
+  /** Seed used to generate this run — for debrief replay */
+  gameSeed:             number;
+  /** Wall-clock ms when simulation started (null before first start) */
+  gameStartTimestamp:   number | null;
+  /** Total accumulated paused milliseconds (so countdown stays honest) */
+  totalPausedMs:        number;
+  /** Wall-clock ms when the current pause began (null if not paused) */
+  lastPauseTimestamp:   number | null;
 }
 
 // ─── Portfolio ───────────────────────────────────────────────────────────────
@@ -110,7 +155,10 @@ export type LogEventType =
   | "plan_break_detected"
   | "panic_sell_detected"
   | "game_started"
-  | "game_ended";
+  | "game_ended"
+  | "game_quit"
+  | "simulation_paused"
+  | "simulation_resumed";
 
 export interface LogEvent {
   type: LogEventType;

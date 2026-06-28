@@ -23,7 +23,7 @@ export default function DebugScreen() {
 
   const selectGoal    = useGameStore((s) => s.selectGoal);
   const buyAsset      = useGameStore((s) => s.buyAsset);
-  const tick          = useGameStore((s) => s.tick);
+  const tickEngine   = useGameStore((s) => s.tickEngine);
   const resetGame     = useGameStore((s) => s.resetGame);
 
   const fmt = (n: number) => "₹" + Math.round(n).toLocaleString();
@@ -34,7 +34,7 @@ export default function DebugScreen() {
         Store Debug
       </AppText>
 
-      <Card padded style={{ marginBottom: 24 }}>
+      <Card padded>
         <AppText variant="caption" color="muted" style={{ marginBottom: 10 }}>
           LIVE STATE
         </AppText>
@@ -55,7 +55,7 @@ export default function DebugScreen() {
       <View style={{ gap: 10, marginBottom: 32 }}>
         <Button label="Select retirement goal"       variant="secondary" onPress={() => selectGoal("retirement_long")} />
         <Button label="Buy ₹10k Bharath Large-Cap"  variant="secondary" onPress={() => buyAsset("bharath_largecap_eq", 10_000)} />
-        <Button label="Tick day +1"                 variant="ghost"     onPress={() => tick()} />
+        <Button label="Tick day +1"                 variant="ghost"     onPress={() => tickEngine()} />
         <Button label="Reset game"                  variant="ghost"     onPress={() => resetGame()} />
         <Button label="← Back to menu"             variant="ghost"     onPress={() => router.replace("/")} />
       </View>
